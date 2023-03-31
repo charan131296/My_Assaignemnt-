@@ -1,0 +1,85 @@
+Problem 2 - Ingestion
+---------------------
+Write code to ingest the weather data from the raw text files supplied into your database, using the model you designed. Check for duplicates: if your code is run twice, you should not end up with multiple rows with the same data in your database. Your code should also produce log output indicating start and end times and number of records ingested.
+
+
+from datetime import datetime
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models import Base, Station, Record
+
+# Define the database connection
+
+engine = create_engine('sqlite:///weather.db')
+Base.metadata.bind = engine
+DBSession = sessionmaker(bind=engine)
+
+# Define the function to ingest the weather data
+
+def ingest_weather_data():
+
+    # Keep track of start time and number of records ingested
+
+    start_time = datetime.now()
+    num_records = 0
+
+    # Loop through each file in the wx_data directory
+
+    for filename in os.listdir('wx_data'):
+        filepath = os.path.join('wx_data', filename)
+        with open(filepath, 'r') as f:
+            for line in f:
+
+                # Parse the line to get the weather record data
+
+                data = line.strip().split('\t')
+                date = datetime.strptime(data[0], '%Y%m%d').date()
+                max_temp = float(data[1]) / 10.0
+                min_temp = float(data[2]) / 10.0
+                precipitation = float(data[3]) / 10.0
+
+                # Check if the station already exists in the database
+                station_name = filename[:-4]  # remove the '.txt' extension from the filename
+                session = DBSession()
+                station = session.query(Station).filter(Station.name == station_name).first()
+                if not station:
+                    # Create a new station if it doesn't exist
+
+                    state = filename[:2]  
+
+		    # the state code is the first two characters of the filename
+
+                    latitude = 0.0
+                    longitude = 0.0  												    # set default values for latitude and longitude
+
+                    station = Station(name=station_name, state=state, latitude=latitude, longitude=longitude)
+                    session.add(station)
+                    session.commit()
+
+                    # Check if the weather record already exists in the database
+
+                record = session.query(Record).filter(Record.station == station, Record.date == date).first()
+                if not record:
+
+                    # Create a new weather record if it doesn't exist
+                    record = Record(station=station, date=date, max_temp=max_temp, min_temp=min_temp, precipitation=precipitation)
+                    session.add(record)
+                    session.commit()
+                    num_records += 1
+
+    # Keep track of end time and produce log output
+
+    end_time = datetime.now()
+    duration = end_time - start_time
+    print(f"Ingested {num_records} weather records in {duration.seconds} seconds.")
+
+# Call the ingest_weather_data function
+if __name__ == '__main__':
+    ingest_weather_data()
+
+Description: 
+
+This implementation reads each file in the wx_data directory, parses each line to get the weather record data, checks if the corresponding station and weather record already exist in the database, and creates them if they don't exist. The implementation uses the DBSession object to manage database connections and transactions.
+
+The implementation also keeps track of the start time and end time of the ingestion process and produces log output at the end, indicating the number of records ingested and the duration of the ingestion process.
