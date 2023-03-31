@@ -1,0 +1,17 @@
+(Optional.) Assume you are asked to get your code running in the cloud using AWS. What tools and AWS services would you use to deploy the API, database, and a scheduled version of your data ingestion code? Write up a description of your approach.
+
+We Use Mobaxterm or Putty to connect to EC2 or EMR 
+
+Amazon EC2 (Elastic Compute Cloud) - for hosting the API and database. EC2 provides scalable computing capacity in the AWS cloud, allowing us to create and configure virtual machines with different operating systems and software.
+
+Amazon RDS (Relational Database Service) - for hosting the database. RDS provides an easy-to-set-up, scalable, and highly available relational database in the cloud. It supports multiple database engines such as MySQL, PostgreSQL, Oracle, and SQL Server, among others.
+
+Amazon S3 (Simple Storage Service) - for storing the weather data files that will be ingested into the database. S3 provides a secure, durable, and scalable object storage service that can store and retrieve any amount of data from anywhere on the web.
+
+AWS Lambda - for running the scheduled version of the data ingestion code. Lambda is a serverless compute service that lets us run code without provisioning or managing servers. We can create a Lambda function that is triggered by a scheduled event using AWS CloudWatch Events.
+
+AWS API Gateway - for creating, deploying, and managing the API. API Gateway is a fully managed service that makes it easy to create, deploy, and manage APIs at any scale. It allows us to define the API's resources and methods, and set up authentication and access control.
+
+AWS CloudFormation - for deploying and managing the infrastructure as code. CloudFormation provides a way to model and provision AWS resources and their dependencies using templates. We can use CloudFormation to define and deploy the API, database, S3 bucket, and Lambda function.
+
+AWS CloudWatch - for monitoring and logging. CloudWatch provides monitoring and logging services for AWS resources and applications. We can use CloudWatch to monitor the API, database, Lambda function, and other resources, and set up alarms to notify us when certain metrics exceed a threshold.
