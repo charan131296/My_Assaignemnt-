@@ -1,0 +1,87 @@
+Problem 1 - Data Modeling
+-------------------------
+Choose a database to use for this coding exercise (SQLite, Postgres, etc.). Design a data model to represent the weather data records. If you use an ORM, your answer should be in the form of that ORM's data definition format. If you use pure SQL, your answer should be in the form of DDL statements.
+
+using SQL Lite
+
+For this exercise, I will design a data model for the weather data records using SQLite. The data model will have two tables, one for the weather stations and another for the weather records. The tables and their fields are defined below:
+
+Stations table:
+
+id (INTEGER PRIMARY KEY): A unique identifier for each weather station
+name (TEXT): The name of the weather station
+state (TEXT): The state where the weather station is located
+latitude (REAL): The latitude of the weather station
+longitude (REAL): The longitude of the weather station
+Records table:
+
+id (INTEGER PRIMARY KEY): A unique identifier for each weather record
+station_id (INTEGER): A foreign key referencing the id field in the Stations table
+date (DATE): The date of the weather record
+max_temp (REAL): The maximum temperature for that day (in tenths of a degree Celsius)
+min_temp (REAL): The minimum temperature for that day (in tenths of a degree Celsius)
+precipitation (REAL): The amount of precipitation for that day (in tenths of a millimeter)
+
+USING  SQLITE: 
+
+CREATE TABLE stations (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    state TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL
+);
+
+CREATE TABLE weather_data (
+    id INTEGER PRIMARY KEY,
+    station_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    tmax INTEGER,
+    tmin INTEGER,
+    prcp INTEGER,
+    FOREIGN KEY (station_id) REFERENCES stations(id)
+);
+
+
+USING ORM 
+
+Description :   
+
+In this ORM implementation, I am using SQLAlchemy to define the data model. There are two classes, Station and Record, each of which corresponds to a table in the SQLite database.
+
+The Station class has an id, name, state, latitude, and longitude, which correspond to the columns in the Stations table. 
+
+Additionally, the class has a relationship attribute, records, which is defined using the relationship() function of SQLAlchemy. This attribute is used to define the one-to-many relationship between the Stations and Records tables, where each station can have multiple records.
+
+The Record class has an id, station_id, date, max_temp, min_temp, and precipitation, which correspond to the columns in the Records table. The station_id column is defined as a foreign key, referencing the id column in the Stations table. The station attribute is defined using the relationship() function, which specifies that each record belongs to one station.
+
+Finally, the Base.metadata.create_all(engine) statement creates the tables in the SQLite database based on the ORM data model.
+
+
+from sqlalchemy import create_engine, Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+
+engine = create_engine('sqlite:///weather.db')
+Base = declarative_base()
+
+class Station(Base):
+    __tablename__ = 'stations'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    state = Column(String)
+    latitude = Column(Float)
+    longitude = Column(Float)
+    records = relationship("Record", back_populates="station")
+
+class Record(Base):
+    __tablename__ = 'records'
+    id = Column(Integer, primary_key=True)
+    station_id = Column(Integer, ForeignKey('stations.id'))
+    date = Column(Date)
+    max_temp = Column(Float)
+    min_temp = Column(Float)
+    precipitation = Column(Float)
+    station = relationship("Station", back_populates="records")
+
+Base.metadata.create_all(engine)
