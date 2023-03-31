@@ -1,0 +1,82 @@
+Problem 3 - Data Analysis
+-------------------------
+For every year, for every weather station, calculate:
+
+* Average maximum temperature (in degrees Celsius)
+* Average minimum temperature (in degrees Celsius)
+* Total accumulated precipitation (in centimeters)
+
+Ignore missing data when calculating these statistics.
+
+Design a new data model to store the results. Use NULL for statistics that cannot be calculated.
+
+Your answer should include the new model definition as well as the code used to calculate the new values and store them in the database.
+
+
+For data analysis, we can define a new data model "WeatherSummary" and the flowwing columns.
+
+id - Primary key
+station_id - Foreign key to the Station table
+year - Year of the weather data record
+avg_max_temp - Average maximum temperature for that year at the station (in degrees Celsius)
+avg_min_temp - Average minimum temperature for that year at the station (in degrees Celsius)
+total_precipitation - Total accumulated precipitation for that year at the station (in centimeters)
+
+the SQLAlchemy ORM data model definition for the WeatherSummary model:
+
+from sqlalchemy import Column, Integer, Float, ForeignKey, UniqueConstraint
+from sqlalchemy.orm import relationship
+from models import Base, Station
+
+class WeatherSummary(Base):
+    __tablename__ = 'weather_summary'
+    id = Column(Integer, primary_key=True)
+    station_id = Column(Integer, ForeignKey('station.id'))
+    station = relationship(Station, backref='summaries')
+    year = Column(Integer)
+    avg_max_temp = Column(Float)
+    avg_min_temp = Column(Float)
+    total_precipitation = Column(Float)
+
+    __table_args__ = (UniqueConstraint('station_id', 'year', name='station_year_uc'),)
+
+
+The WeatherSummary model has a foreign key relationship with the Station model, and also includes a unique constraint to ensure that there is only one summary record per station per year.
+
+the code to calculate the new values and store them in the database: "USING PYTHON"
+
+
+from sqlalchemy import func
+from sqlalchemy.orm import joinedload
+from models import Base, Station, Record, WeatherSummary
+from sqlalchemy.orm import sessionmaker
+
+# Define the database connection
+
+engine = create_engine('sqlite:///weather.db')
+Base.metadata.bind = engine
+DBSession = sessionmaker(bind=engine)
+
+def calculate_weather_summaries():
+    session = DBSession()
+
+    # Loop through each station and year combination
+
+    for station in session.query(Station).options(joinedload(Station.records)):
+        for year in range(1985, 2015):
+            records_for_year = [record for record in station.records if record.date.year == year]
+            if records_for_year:
+
+                # Calculate the average maximum and minimum temperature and total precipitation for the year
+
+                avg_max_temp = session.query(func.avg(Record.max_temp)).filter(Record.station == station, Record.date >= f"{year}-01-01", Record.date < f"{year+1}-01-01").scalar()
+                avg_min_temp = session.query(func.avg(Record.min_temp)).filter(Record.station == station, Record.date >= f"{year}-01-01", Record.date < f"{year+1}-01-01").scalar()
+                total_precipitation = session.query(func.sum(Record.precipitation)).filter(Record.station == station, Record.date >= f"{year}-01-01", Record.date < f"{year+1}-01-01").scalar()
+
+                if avg_max_temp is not None and avg_min_temp is not None and total_precipitation is not None:
+                    # Create a new summary record for the year and station if the values are not None
+                    weather_summary = WeatherSummary(station=station, year=year, avg_max_temp=avg_max_temp, avg_min_temp=avg_min_temp, total_precipitation=total_precipitation)
+                    session.add(weather_summary)
+                    session.commit()
+
+    session.close()
